@@ -1,0 +1,40 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create Android Flutter project
+        run: |
+          flutter create --platforms=android --org com.randomvoice --project-name random_voice build_app
+          cp mobile/pubspec.yaml build_app/pubspec.yaml
+          rm -rf build_app/lib
+          cp -r mobile/lib build_app/lib
+          cd build_app
+          flutter pub get
+
+      - name: Build debug APK
+        run: |
+          cd build_app
+          flutter build apk --debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: random-voice-debug-apk
+          path: build_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
